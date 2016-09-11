@@ -1,0 +1,3 @@
+g++-4.9 -std=c++14  -mmacosx-version-min=10.11 -c main.cpp
+g++-4.9 -std=c++14  main.o -o SendData-mac /usr/local/lib/liblsl64.dylib -mmacosx-version-min=10.11
+

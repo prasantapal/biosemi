@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+
+PROJECT_NAME=RTNFGUIWITHSIMULATOR
+PROJECT_NAME=${PWD##*/}
+#The folder name is the project name by default
+my_qmake=~/Qt/5.4/clang_64/bin/qmake
+#my_qmake=qmake
+#echo $my_qmake
+${my_qmake} -project
+INCLUDEPATH_LINE=8;
+INCLUDEPATH="/usr/local/include"
+XCODE_FLAG=false;
+gcc_version="gcc-4.9"
+g_plus_plus_version=g++-4.9
+CPP_STANDARD="-std=gnu++14"
+make_file=Makefile
+LIB_STD_CPP_PATH=/usr/local/Cellar/gcc49/4.9.3/lib/gcc/4.9/libstdc++.dylib
+LIB_ARMADILLO_PATH=/usr/local/Cellar/armadillo/7.200.2/lib/libarmadillo.dylib
+echo "using LIB_STD_CPP_PATH $LIB_STD_CPP_PATH"
+lsl_lib=/usr/local/lib/liblsl64.dylib
+lib_stk=-lstk
+lib_xml2=-lxml2
+lib_xml=-Xm
+
+dependency_frameworks="-framework QtWidgets  QtGui  QtCore  DiskArbitration  IOKit  QtMultimedia QtNetwork OpenGL  AGL "
+
+dependency_libs="$boost_lib_date_time $boost_lib_filesystem $boost_lib_system $lib_stk $lib_lsl $boost_lib_thread"
+echo "keep the following file in your /usr/local/lib dir"$'\n'"${dependency_libs}"
+
+echo "Qt path:-F~/Qt/5.4/clang_64/lib following are the framework dependencies"$'\n'${dependency_frameworks}
+
+n=$#
+if [ ${n} == 0 ]; then
+	echo "usage: ./build_project (XCODEBUILD)true|false(Makefile)";
+exit;
+fi;
+
+if [ ${n} == 1 ]; then
+ XCODE_FLAG=$@
+fi;
+awk -v INCLUDEPATH_LINE=${INCLUDEPATH_LINE} -v INCLUDEPATH=${INCLUDEPATH} -v XCODE_FLAG=${XCODE_FLAG} "{
+if(NR==INCLUDEPATH_LINE) {
+	print \"INCLUDEPATH +=\",INCLUDEPATH;
+	print \"QT+=widgets multimedia\";
+	print \"QMAKE_LIBDIR_FLAGS += -L/usr/local/lib\";
+}
+}{ print }" ${PROJECT_NAME}.pro > temp.pro
+mv temp.pro  ${PROJECT_NAME}.pro
+if [ ${XCODE_FLAG} == "true" ] ; then
+${my_qmake} -r -spec macx-xcode ${PROJECT_NAME}.pro
+else
+${my_qmake} -r  ${PROJECT_NAME}.pro
+fi
+echo "updating gcc"
+gsed -i 's/^CC.*/CC = '${gcc_version}'\n''CC += '${CPP_STANDARD}'/' ${make_file}
+echo "updating g++"
+gsed -i 's/^CXX.*/CXX = '${g_plus_plus_version}'\n''CXX += '${CPP_STANDARD}'/' ${make_file}
+echo "Updating LINK"
+gsed -i 's/^LINK.*/LINK = '${g_plus_plus_version}'\n''LINK += '${CPP_STANDARD}'/' ${make_file}
+echo "Updating LIBS"
+gsed -i 's#LIBS.*=\(.*\)#LIBS = \1 '${LIB_STD_CPP_PATH}' '${lsl_lib}'#' ${make_file}
